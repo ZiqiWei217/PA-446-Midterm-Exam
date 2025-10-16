@@ -1,0 +1,85 @@
+---
+title: "Midterm Part2 & Part3"
+author: "Ziqi Wei"
+format: pdf
+editor: visual
+---
+
+## a. Link to the GitHub repository containing all associated files used to create the webpage.
+
+https://github.com/ZiqiWei217/PA-446-Midterm-Exam
+
+## b.  Code and results/answers for Part II 
+
+### Part II: Web scraping [20 points] 
+
+Go to the website https://www.scrapethissite.com/pages/simple/ and scrape the data to create 
+a table with four variables: Country, Capital, Population, and Area. The table will have a total of 
+250 observations. 
+
+```{r}
+library(rvest)
+library(tidyverse)
+
+# Read the HTML
+html <- read_html("https://www.scrapethissite.com/pages/simple/")
+
+# Select the main container blocks for each country
+country_blocks <- html |>
+  html_elements("div.col-md-4.country")
+
+# Extract the country name
+country <- country_blocks |>
+  html_element("h3.country-name") |>
+  html_text2() # Use html_text2() for clean text extraction
+
+# Extract the capital city
+capital <- country_blocks |>
+  html_element("span.country-capital") |>
+  html_text2()
+
+# Extract the population
+population <- country_blocks |>
+  html_element("span.country-population") |>
+  html_text2() |>
+  as.numeric() # Convert the text to a numeric type
+
+# Extract the area
+area <- country_blocks |>
+  html_element("span.country-area") |>
+  html_text2() |>
+  as.numeric() # Convert the text to a numeric type
+
+# Combine the extracted data into a tibble (a modern data frame)
+country_data <- tibble(
+  Country = country,
+  Capital = capital,
+  Population = population,
+  "Area(km2)" = area
+)
+
+head(country_data)
+
+# Verify the count.
+print(paste("Total observations scraped:", nrow(country_data)))
+
+# Save this data to a file
+write_csv(country_data, "scraped_countries.csv")
+```
+
+## c. Code and results/answers for Part III 
+
+### PART III: API Access [62 points] 
+
+Public administrators often use Census data to understand how civic resources - such as 
+income, broadband, and education - vary across regions. The American Community Survey 
+(ACS) provides detailed demographic and socioeconomic data accessible through the 
+tidycensus package, which connects directly to the Census API. 
+
+You will use tidycensus and tidyverse tools to explore income inequality and the digital divide 
+across Illinois counties. 
+
+### Step 1: Identify Relevant Variables [6 points) 
+Go to the ACS 5-Year Data Dictionary and find the variables that represent the following. I am 
+providing you with one of the variables. Find the remaining two and fill in the blanks. 
+
