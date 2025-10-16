@@ -5,17 +5,15 @@ format: pdf
 editor: visual
 ---
 
-## a. Link to the GitHub repository containing all associated files used to create the webpage.
+# a. Link to the GitHub repository containing all associated files used to create the webpage.
 
 https://github.com/ZiqiWei217/PA-446-Midterm-Exam
 
-## b.  Code and results/answers for Part II 
+# b. Code and results/answers for Part II
 
-### Part II: Web scraping [20 points] 
+## Part II: Web scraping \[20 points\]
 
-Go to the website https://www.scrapethissite.com/pages/simple/ and scrape the data to create 
-a table with four variables: Country, Capital, Population, and Area. The table will have a total of 
-250 observations. 
+Go to the website https://www.scrapethissite.com/pages/simple/ and scrape the data to create a table with four variables: Country, Capital, Population, and Area. The table will have a total of 250 observations.
 
 ```{r}
 library(rvest)
@@ -67,19 +65,212 @@ print(paste("Total observations scraped:", nrow(country_data)))
 write_csv(country_data, "scraped_countries.csv")
 ```
 
-## c. Code and results/answers for Part III 
+# c. Code and results/answers for Part III
 
-### PART III: API Access [62 points] 
+## PART III: API Access \[62 points\]
 
-Public administrators often use Census data to understand how civic resources - such as 
-income, broadband, and education - vary across regions. The American Community Survey 
-(ACS) provides detailed demographic and socioeconomic data accessible through the 
-tidycensus package, which connects directly to the Census API. 
+Public administrators often use Census data to understand how civic resources - such as income, broadband, and education - vary across regions. The American Community Survey (ACS) provides detailed demographic and socioeconomic data accessible through the tidycensus package, which connects directly to the Census API.
 
-You will use tidycensus and tidyverse tools to explore income inequality and the digital divide 
-across Illinois counties. 
+You will use tidycensus and tidyverse tools to explore income inequality and the digital divide across Illinois counties.
 
-### Step 1: Identify Relevant Variables [6 points) 
-Go to the ACS 5-Year Data Dictionary and find the variables that represent the following. I am 
-providing you with one of the variables. Find the remaining two and fill in the blanks. 
+### Step 1: Identify Relevant Variables \[6 points)
 
+Go to the ACS 5-Year Data Dictionary and find the variables that represent the following.
+
+```{r}
+library(tidyverse)
+library(tidycensus)
+# 2023 5-year American Community Survey (ACS).
+v23 <- load_variables(2023, "acs5", cache = TRUE)
+
+# Find the variable for Median Household Income
+income_variable <- v23 %>%
+  filter(name == "B19013_001")
+
+print(income_variable, width = Inf)
+
+# Find variables for Broadband Internet Access
+internet_variables <- v23 %>%
+  filter(str_detect(name, "B28002_00"), # Look in the correct table
+         str_detect(label, "Broadband|Total$")) # Find labels containing "Broadband" or ending in "Total"
+
+print(internet_variables %>% select(name, label), width = Inf)
+```
+
+• Median household income (in the past 12 months): B19013_001E
+• Households with broadband Internet: B28002_004E
+• Total households with any type of internet access: B28002_001E
+
+### Step 2: Retrieve Data [8 points] 
+
+Use get_acs() to retrieve the following variables for all counties in Illinois: 
+
+• Median household income (in the past 12 months) 
+
+• Households with broadband Internet 
+
+• Total households with any type of internet access 
+
+```{r}
+# Define a named vector of the variables
+vars_to_get <- c(
+  income = "B19013_001E",
+  broadband = "B28002_004E",
+  total_households = "B28002_001E"
+)
+
+# Use the get_acs() function to retrieve the data for all counties in Illinois.
+il_acs_data <- get_acs(
+  geography = "county",
+  variables = vars_to_get,
+  state = "IL",
+  year = 2023,
+  survey = "acs5"
+)
+
+head(il_acs_data)
+```
+
+### Step 3: Clean and Transform Data [14 + 4 points] 
+
+a) Use pivot_wider() to create one row per county (with income and broadband side-by
+side). [6 points]  
+
+> o BONUS: Split "County, Illinois" into County and State [4 points] 
+
+b) Calculate a new variable: broadband_rate = broadband/total_households * 100 [4 
+points] 
+
+c) Arrange counties from highest to lowest broadband access. [4 points]
+
+```{r}
+il_data_clean <- il_acs_data %>%
+  select(NAME, variable, estimate) %>%
+  pivot_wider(
+    names_from = variable,
+    values_from = estimate
+  ) %>%   #  a)
+  glimpse() %>%
+  # Rename the columns from Census codes to human-readable names
+  rename(
+    income = "B19013_001",
+    broadband = "B28002_004",
+    total_households = "B28002_001"
+  ) %>%
+  separate(NAME, into = c("county", "state"), sep = ", ", remove = TRUE) %>% # bonus
+  mutate(broadband_rate = (broadband / total_households) * 100) %>%  # b)
+  arrange(desc(broadband_rate))  # c)
+
+head(il_data_clean,12)
+```
+
+### Step 4: Analyze patterns [8 points] 
+
+a) Compute the mean and median broadband rate across all Illinois counties. [4 points] 
+
+```{r}
+summary_stats <- il_data_clean %>%
+  summarise(
+    mean_broadband_rate = mean(broadband_rate, na.rm = TRUE),
+    median_broadband_rate = median(broadband_rate, na.rm = TRUE)
+  )
+
+summary_stats
+```
+
+b) Identify the top 5 counties with the highest broadband access and the bottom 5 counties with the lowest. [4 points]
+
+```{r}
+#Since we have already arranged the sequence in step3 c)
+top_5_counties <- il_data_clean %>%
+  slice_head(n = 5)
+
+top_5_counties
+
+bottom_5_counties <- il_data_clean %>%
+  slice_tail(n = 5)
+
+bottom_5_counties
+```
+
+### Step 5: Visualize the results [14 + 8 points] 
+
+1. Scatterplot: Income (x-axis) vs Broadband Rate (y-axis). [8 points] 
+
+a. Add a regression line using geom_smooth(method = "lm"). 
+
+b. Label axes and add an informative title. 
+
+```{r}
+library(scales)
+ggplot(il_data_clean, aes(x = income, y = broadband_rate)) +
+  geom_point(alpha = 0.7, color = "midnightblue") +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +    # a)
+  scale_x_continuous(labels = dollar_format()) +
+  labs(
+    title = "Relationship Between Household Income and Broadband Rate in Illinois Counties",
+    subtitle = "Data from 2023 ACS 5-Year Survey",
+    x = "Median Household Income ($)",
+    y = "Broadband Access Rate (%)",
+    caption = "Source: U.S. Census Bureau"
+  ) +     # b)
+  theme_minimal()
+```
+
+2. Bar chart: Show the top 10 and bottom 10 counties by broadband access. HINT: Use the reorder function to order bars. [6 points] 
+
+```{r}
+top_10 <- slice_head(il_data_clean, n = 10)
+bottom_10 <- slice_tail(il_data_clean, n = 10)
+top_bottom_10 <- bind_rows(top_10, bottom_10)
+
+ggplot(top_bottom_10, aes(y = broadband_rate, x = fct_reorder(county, broadband_rate))) +
+  geom_col(aes(fill = broadband_rate > 85)) +
+  coord_flip() +
+  scale_fill_manual(values = c("tomato", "steelblue"), guide = "none") +
+  labs(
+    title = "Top 10 and Bottom 10 Illinois Counties by Broadband Access Rate",
+    subtitle = "Comparing the highest and lowest access rates in the state",
+    x = "County",
+    y = "Broadband Access Rate (%)"
+  ) +
+  theme_minimal()
+```
+
+3. BONUS: Create a single ordered bar chart of ALL counties by broadband [8 points] 
+
+```{r bonus-plot, echo=TRUE, fig.height=12, fig.width=8, out.width="100%"}
+ggplot(il_data_clean, aes(y = broadband_rate, x = fct_reorder(county, broadband_rate))) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+    title = "Broadband Access Rate Across All Illinois Counties (2023)",
+    subtitle = "Ordered from lowest to highest access rate",
+    x = "County",
+    y = "Broadband Access Rate (%)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 8))
+```
+> 
+
+### Step 6: Reflection [16 points]
+
+Write 3-4 sentences per question: 
+
+1. What patterns do you observe between income and broadband access? [4 points] 
+
+> Based on the scatterplot, there is a clear and strong positive correlation between median household income and broadband access rates across Illinois counties. As a county's median household income increases, its broadband access rate tends to increase as well, which is confirmed by the upward-sloping regression line. The data points cluster more tightly at the higher end of the income and access spectrum, while counties with the lowest incomes, such as Alexander and Pulaski, also exhibit the lowest broadband access rates. This pattern suggests that economic prosperity is a significant factor associated with digital connectivity at the county level.
+
+2. What might explain the variation in broadband access across counties? [4 points] 
+
+> The variation in broadband access is likely driven by a combination of economic and geographic factors. Higher-income counties, which are often more densely populated suburban areas like DuPage and Lake County, represent a more profitable market for internet service providers, encouraging investment in modern infrastructure. Conversely, lower-income counties are often more rural and less populated, leading to higher per-household costs for infrastructure deployment and lower expected returns, which deters private investment. This creates a cycle where wealthier areas receive better service, while poorer, rural areas like Pope and Saline County are left with insufficient access and limited provider choice.
+
+3. How could public administrators use this data to inform digital inclusion policies? [4 
+points] 
+
+> Public administrators can use this analysis as a powerful tool for targeted intervention and policy-making. The data clearly identifies which counties are most in need, allowing administrators to direct state and federal grants for infrastructure projects to the areas with the lowest access rates, such as Pulaski and Alexander counties. Furthermore, the strong correlation between income and access provides evidence to support policies that go beyond infrastructure, such as creating subsidy programs to make internet services more affordable for low-income households. This data provides an empirical baseline for setting policy goals and measuring the effectiveness of digital equity initiatives over time.
+
+4. What are some limitations of using ACS data for local decision-making? [4 points]
+
+> While invaluable, the ACS data has several limitations for local decision-making. First, as it is based on a survey, the data consists of estimates that come with a margin of error (moe), which can be particularly large for counties with smaller populations, making the figures less precise. Second, the 5-year estimates (2019-2023) may not reflect the most recent infrastructure changes, potentially lagging behind real-time conditions. Finally, county-level data can mask significant disparities within a county, where an affluent town and an underserved rural area might exist side-by-side, a nuance lost in the aggregated data.
