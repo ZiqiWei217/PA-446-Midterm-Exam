@@ -3,6 +3,9 @@ title: "Midterm Part2 & Part3"
 author: "Ziqi Wei"
 format: pdf
 editor: visual
+execute:
+  message: false
+  warning: false
 ---
 
 # a. Link to the GitHub repository containing all associated files used to create the webpage.
@@ -98,7 +101,9 @@ print(internet_variables %>% select(name, label), width = Inf)
 ```
 
 • Median household income (in the past 12 months): B19013_001E
+
 • Households with broadband Internet: B28002_004E
+
 • Total households with any type of internet access: B28002_001E
 
 ### Step 2: Retrieve Data [8 points] 
