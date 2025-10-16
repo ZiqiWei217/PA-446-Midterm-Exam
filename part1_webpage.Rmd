@@ -1,0 +1,24 @@
+---
+title: 'Part 1: A Look into Chicago''s Digital Divide'
+author: "Ziqi Wei"
+date: "2025-10-16"
+output:
+  html_document:
+    theme: journal
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Part I: Describing a Civic Problem and Its Implications
+
+### **The Digital Divide in Englewood: A Case Study of Market Failure and Inequity**
+
+The digital divide in Chicago is a significant civic problem, vividly illustrated by the situation in the South Side community of Englewood. This issue transcends mere lack of internet access; it is a fundamental barrier to economic and social mobility for the area's predominantly minority and low-income residents.The problem is rooted in a market failure, characterized by aging network infrastructure and an oligopolistic market structure that leaves residents with service that is slow, expensive, and unreliable.
+
+The implications of this divide are profound. For students in Englewood, remote learning during the COVID-19 pandemic was severely hampered by poor network quality, with unstable connections directly impacting their quality of learning and causing many to fall behind. For the workforce, the modern job market's reliance on online applications and video interviews creates significant obstacles for those with poor internet service. Furthermore, essential public services, such as telehealth appointments and welfare applications, are increasingly moving online, making them difficult to access for households with inadequate internet. This digital exclusion deepens social isolation and prevents full participation in civic life.
+
+The root causes of Englewood's digital divide are twofold. First, the community relies on outdated infrastructure, such as copper or DSL lines, which have low transmission capacity and are prone to instability. Broadband providers are reluctant to make the substantial upfront investment required for fiber-optic upgrades due to the low expected profit from a lower-income community. Second, the market is dominated by an oligopoly of two main providers, Comcast and AT&T. This lack of competition, reinforced by the high costs for smaller providers to enter the market, means residents have very limited choices. Consequently, Englewood residents often pay fees comparable to or higher than those in affluent neighborhoods for vastly inferior service. For instance, a 100 Mbps plan in Englewood can cost around $60 per month, while the same fee in Lincoln Park could secure a 1 Gbps fiber connection. This inequity is a critical civic issue that demands urgent attention.
