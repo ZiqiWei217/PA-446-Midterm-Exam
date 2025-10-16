@@ -257,7 +257,6 @@ ggplot(il_data_clean, aes(y = broadband_rate, x = fct_reorder(county, broadband_
   theme_minimal() +
   theme(axis.text.y = element_text(size = 8))
 ```
-> 
 
 ### Step 6: Reflection [16 points]
 
